@@ -125,12 +125,20 @@
       font-size: 15px;
       line-height: 1.5;
       color: #ddd;
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
     }
 
     .reflection-item .ts {
       color: #555;
       font-size: 13px;
-      margin-bottom: 4px;
+      flex-shrink: 0;
+    }
+
+    .reflection-item .divider {
+      color: #333;
+      flex-shrink: 0;
     }
 
     /* Fixed bottom controls */
@@ -551,7 +559,7 @@
     function renderReflection(ts, text) {
       const item = document.createElement('div');
       item.className = 'reflection-item';
-      item.innerHTML = `<div class="ts">${fmt(ts)}</div><div>${text}</div>`;
+      item.innerHTML = `<span class="ts">${fmt(ts)}</span><span class="divider">|</span><span>${text}</span>`;
       reflectionsList.appendChild(item);
       reflectionsSection.style.display = 'flex';
     }
