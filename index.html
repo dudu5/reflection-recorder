@@ -175,7 +175,13 @@
       font-weight: 600;
       cursor: pointer;
     }
-    .skip-btn:active { background: #2a2a2a; }
+    .skip-btn:active {
+      background: #333;
+      transform: scale(0.92);
+    }
+    .skip-btn {
+      transition: transform 0.1s, background 0.1s;
+    }
 
     /* Play / Reflect buttons */
     .main-btns {
