@@ -527,6 +527,8 @@
       liveText.classList.add('placeholder');
       reflectionsSection.style.display = 'none';
       liveTranscript.style.display = 'flex';
+      playBtn.disabled = true;
+      playBtn.style.opacity = '0.3';
     }
 
     function stopReflection() {
@@ -536,6 +538,8 @@
       reflectBtn.classList.remove('recording');
 
       liveTranscript.style.display = 'none';
+      playBtn.disabled = false;
+      playBtn.style.opacity = '1';
 
       if (currentTranscript.trim()) {
         saveReflection(reflectTimestamp, currentTranscript.trim());
