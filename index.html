@@ -51,7 +51,7 @@
       display: block;
     }
 
-    /* Reflections */
+    /* Live transcript */
     #live-transcript {
       display: none;
       flex-direction: column;
@@ -81,6 +81,11 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 4px;
+    }
+
+    #reflections-actions {
+      display: flex;
+      gap: 8px;
     }
 
     #reflections-header span {
@@ -341,7 +346,7 @@
     <div id="reflections-section">
       <div id="reflections-header">
         <span>Reflections</span>
-        <div style="display:flex;gap:8px">
+        <div id="reflections-actions">
           <button id="clear-btn">Clear</button>
           <button id="copy-btn">Copy all</button>
         </div>
@@ -413,6 +418,10 @@
     const STORAGE_KEY = 'reflections';
     const reflections = [];
     let isRecording = false;
+    let recognition;
+    let currentTranscript = '';
+    let reflectTimestamp = 0;
+    let wasPlaying = false;
 
     // IndexedDB for audio file
     const DB_NAME = 'reflection-recorder';
@@ -440,10 +449,6 @@
         req.onerror = () => resolve(null);
       }));
     }
-    let recognition;
-    let currentTranscript = '';
-    let reflectTimestamp = 0;
-    let wasPlaying = false;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
