@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speech Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #000;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      gap: 32px;
+    }
+    #btn {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: none;
+      background: #e63946;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #btn.recording { background: #2a9d8f; }
+    #status {
+      font-size: 16px;
+      color: #aaa;
+    }
+    #output {
+      width: 100%;
+      max-width: 400px;
+      min-height: 120px;
+      background: #111;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #fff;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <button id="btn">Tap to speak</button>
+  <div id="status">idle</div>
+  <div id="output">Transcription will appear here...</div>
+
+  <script>
+    const btn = document.getElementById('btn');
+    const status = document.getElementById('status');
+    const output = document.getElementById('output');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      status.textContent = 'Speech API not supported in this browser.';
+      btn.disabled = true;
+    }
+
+    let recognition;
+    let recording = false;
+
+    btn.addEventListener('click', () => {
+      if (!recording) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+          recording = true;
+          btn.textContent = 'Tap to stop';
+          btn.classList.add('recording');
+          status.textContent = 'recording...';
+          output.textContent = '';
+        };
+
+        recognition.onresult = (e) => {
+          let transcript = '';
+          for (let i = 0; i < e.results.length; i++) {
+            transcript += e.results[i][0].transcript;
+          }
+          output.textContent = transcript;
+        };
+
+        recognition.onerror = (e) => {
+          status.textContent = 'Error: ' + e.error;
+          recording = false;
+          btn.textContent = 'Tap to speak';
+          btn.classList.remove('recording');
+        };
+
+        recognition.onend = () => {
+          if (recording) {
+            status.textContent = 'done';
+            recording = false;
+            btn.textContent = 'Tap to speak';
+            btn.classList.remove('recording');
+          }
+        };
+
+        recognition.start();
+      } else {
+        recognition.stop();
+        recording = false;
+        btn.textContent = 'Tap to speak';
+        btn.classList.remove('recording');
+        status.textContent = 'done';
+      }
+    });
+  </script>
+</body>
+</html>
