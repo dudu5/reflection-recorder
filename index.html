@@ -70,17 +70,6 @@
       font-size: 18px;
     }
 
-    #continue-btn {
-      padding: 14px 32px;
-      background: #e63946;
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 17px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
     #reflections-section {
       display: none;
       flex-direction: column;
@@ -347,10 +336,6 @@
 
     <div id="live-transcript">
       <p class="placeholder" id="live-text">Listening...</p>
-      <div id="timeout-ui" style="display:none; margin-top:24px; display:none; flex-direction:column; align-items:center; gap:12px;">
-        <p id="timeout-msg" style="color:#e63946; font-size:14px; text-align:center;">Recording stopped — tap Continue or Save</p>
-        <button id="continue-btn">Continue</button>
-      </div>
     </div>
 
     <div id="reflections-section">
@@ -428,27 +413,6 @@
     const STORAGE_KEY = 'reflections';
     const reflections = [];
     let isRecording = false;
-    let timedOut = false;
-    let accumulatedTranscript = '';
-
-    // Tones via Web Audio API
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    function playTone(freq1, freq2, duration) {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.frequency.setValueAtTime(freq1, audioCtx.currentTime);
-      osc.frequency.linearRampToValueAtTime(freq2, audioCtx.currentTime + duration);
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration);
-    }
-
-    function toneStart()   { playTone(440, 880, 0.15); } // rising — recording started
-    function toneTimeout() { playTone(880, 220, 0.4);  } // falling — timed out
 
     // IndexedDB for audio file
     const DB_NAME = 'reflection-recorder';
@@ -501,8 +465,7 @@
         audio.currentTime = Math.min(audio.duration, audio.currentTime + (e.seekOffset || 15));
       });
       navigator.mediaSession.setActionHandler('nexttrack', () => {
-        if (timedOut) continueReflection();
-        else if (!isRecording) startReflection();
+        if (!isRecording) startReflection();
         else stopReflection();
       });
     }
@@ -565,18 +528,21 @@
       });
     });
 
-    const timeoutUI = document.getElementById('timeout-ui');
-    const continueBtn = document.getElementById('continue-btn');
-
     reflectBtn.addEventListener('click', () => {
-      if (timedOut) saveReflection_finish();
-      else if (!isRecording) startReflection();
+      if (!isRecording) startReflection();
       else stopReflection();
     });
 
-    continueBtn.addEventListener('click', () => continueReflection());
+    function startReflection() {
+      if (!SpeechRecognition) {
+        statusEl.textContent = 'Speech recognition not supported.';
+        return;
+      }
+      reflectTimestamp = audio.currentTime;
+      wasPlaying = !audio.paused;
+      audio.pause();
+      currentTranscript = '';
 
-    function startRecognition() {
       recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
       recognition.continuous = true;
@@ -588,87 +554,47 @@
           t += e.results[i][0].transcript;
         }
         currentTranscript = t;
-        const full = (accumulatedTranscript + ' ' + t).trim();
-        liveText.textContent = full;
+        liveText.textContent = t;
         liveText.classList.remove('placeholder');
       };
 
       recognition.onerror = (e) => {
-        if (e.error !== 'no-speech') statusEl.textContent = 'Error: ' + e.error;
+        statusEl.textContent = 'Error: ' + e.error;
+        isRecording = false;
+        reflectBtn.textContent = 'REFLECT';
+        reflectBtn.classList.remove('recording');
       };
 
       recognition.onend = () => {
-        if (isRecording) onTimeout();
+        if (isRecording) stopReflection();
       };
 
       recognition.start();
-    }
-
-    function startReflection() {
-      if (!SpeechRecognition) { statusEl.textContent = 'Speech recognition not supported.'; return; }
-      reflectTimestamp = audio.currentTime;
-      wasPlaying = !audio.paused;
-      audio.pause();
-      accumulatedTranscript = '';
-      currentTranscript = '';
-      timedOut = false;
-
       isRecording = true;
       reflectBtn.textContent = 'SAVE';
       reflectBtn.classList.add('recording');
+      statusEl.textContent = '';
       liveText.textContent = 'Listening...';
       liveText.classList.add('placeholder');
-      timeoutUI.style.display = 'none';
       reflectionsSection.style.display = 'none';
       liveTranscript.style.display = 'flex';
       playBtn.disabled = true;
       playBtn.style.opacity = '0.3';
-
-      startRecognition();
-      toneStart();
-    }
-
-    function continueReflection() {
-      accumulatedTranscript = (accumulatedTranscript + ' ' + currentTranscript).trim();
-      currentTranscript = '';
-      timedOut = false;
-      timeoutUI.style.display = 'none';
-      liveText.classList.add('placeholder');
-
-      startRecognition();
-      toneStart();
-    }
-
-    function onTimeout() {
-      isRecording = false;
-      timedOut = true;
-      accumulatedTranscript = (accumulatedTranscript + ' ' + currentTranscript).trim();
-      currentTranscript = '';
-      timeoutUI.style.display = 'flex';
-      toneTimeout();
     }
 
     function stopReflection() {
       isRecording = false;
-      timedOut = false;
       recognition.stop();
-      saveReflection_finish();
-    }
-
-    function saveReflection_finish() {
-      isRecording = false;
-      timedOut = false;
       reflectBtn.textContent = 'REFLECT';
       reflectBtn.classList.remove('recording');
+
       liveTranscript.style.display = 'none';
-      timeoutUI.style.display = 'none';
       playBtn.disabled = false;
       playBtn.style.opacity = '1';
 
-      const final = (accumulatedTranscript + ' ' + currentTranscript).trim();
-      if (final) saveReflection(reflectTimestamp, final);
-      accumulatedTranscript = '';
-      currentTranscript = '';
+      if (currentTranscript.trim()) {
+        saveReflection(reflectTimestamp, currentTranscript.trim());
+      }
 
       if (wasPlaying) audio.play();
     }
