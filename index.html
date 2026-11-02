@@ -578,7 +578,10 @@
         saveReflection(reflectTimestamp, currentTranscript.trim());
       }
 
-      if (wasPlaying) audio.play();
+      if (wasPlaying) {
+        audio.pause();
+        setTimeout(() => audio.play(), 100);
+      }
     }
 
     function renderReflection(ts, text) {
