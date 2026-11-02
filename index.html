@@ -384,6 +384,32 @@
     const STORAGE_KEY = 'reflections';
     const reflections = [];
     let isRecording = false;
+
+    // IndexedDB for audio file
+    let db;
+    const DB_NAME = 'reflection-recorder';
+    const DB_STORE = 'audio';
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore(DB_STORE);
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e);
+      });
+    }
+
+    function storeFile(file) {
+      return db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).put(file, 'file');
+    }
+
+    function loadFile() {
+      return new Promise((resolve) => {
+        const req = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).get('file');
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = () => resolve(null);
+      });
+    }
     let recognition;
     let currentTranscript = '';
     let reflectTimestamp = 0;
@@ -397,23 +423,37 @@
       return `${m}:${sec.toString().padStart(2, '0')}`;
     }
 
+    function loadAudioBlob(blob, name, restoreTime) {
+      audio.src = URL.createObjectURL(blob);
+      trackName.textContent = name;
+      document.getElementById('loader').style.display = 'none';
+      controls.style.display = 'flex';
+      if (restoreTime) {
+        audio.addEventListener('loadedmetadata', () => {
+          audio.currentTime = restoreTime;
+        }, { once: true });
+      }
+    }
+
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      audio.src = URL.createObjectURL(file);
-      trackName.textContent = file.name.replace(/\.[^.]+$/, '');
-      document.getElementById('loader').style.display = 'none';
-      controls.style.display = 'flex';
-    });
-
-    audio.addEventListener('loadedmetadata', () => {
-      progress.max = audio.duration;
-      durationEl.textContent = fmt(audio.duration);
+      const name = file.name.replace(/\.[^.]+$/, '');
+      storeFile(file);
+      localStorage.setItem('trackName', name);
+      localStorage.setItem('currentTime', 0);
+      loadAudioBlob(file, name, 0);
     });
 
     audio.addEventListener('timeupdate', () => {
       progress.value = audio.currentTime;
       currentTimeEl.textContent = fmt(audio.currentTime);
+      localStorage.setItem('currentTime', audio.currentTime);
+    });
+
+    audio.addEventListener('loadedmetadata', () => {
+      progress.max = audio.duration;
+      durationEl.textContent = fmt(audio.duration);
     });
 
     audio.addEventListener('play', () => { playBtn.textContent = '⏸'; });
@@ -523,6 +563,17 @@
     saved.forEach(r => {
       reflections.push(r);
       renderReflection(r.ts, r.text);
+    });
+
+    // Restore audio file from IndexedDB
+    openDB().then(database => {
+      db = database;
+      return loadFile();
+    }).then(file => {
+      if (!file) return;
+      const name = localStorage.getItem('trackName') || file.name.replace(/\.[^.]+$/, '');
+      const time = parseFloat(localStorage.getItem('currentTime') || 0);
+      loadAudioBlob(file, name, time);
     });
 
     clearBtn.addEventListener('click', () => {
