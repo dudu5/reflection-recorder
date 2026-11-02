@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Reflection Recorder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 24px;
+      gap: 32px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 500;
+      color: #888;
+      letter-spacing: 0.05em;
+    }
+
+    /* File loader */
+    #loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    #file-btn {
+      width: 100%;
+      padding: 20px;
+      background: #1a1a1a;
+      border: 2px dashed #333;
+      border-radius: 16px;
+      color: #888;
+      font-size: 17px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    /* Player section */
+    #player-section {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    #track-name {
+      font-size: 15px;
+      color: #888;
+      text-align: center;
+    }
+
+    /* Progress bar */
+    #progress-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #progress {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #222;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+    #progress::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    #time-display {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #555;
+    }
+
+    /* Skip buttons */
+    .skip-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .skip-btn {
+      flex: 1;
+      padding: 16px 0;
+      background: #1a1a1a;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .skip-btn:active { background: #2a2a2a; }
+
+    /* Play / Record buttons */
+    .main-btns {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    #play-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+    }
+    #play-btn:active { background: #2a2a2a; }
+
+    #reflect-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      background: #e63946;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #reflect-btn.recording { background: #2a9d8f; }
+    #reflect-btn:active { opacity: 0.85; }
+
+    /* Status */
+    #status {
+      font-size: 14px;
+      color: #555;
+      min-height: 20px;
+    }
+
+    /* Reflections */
+    #reflections-section {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    #reflections-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #reflections-header span {
+      font-size: 13px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    #copy-btn {
+      padding: 8px 16px;
+      background: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #copy-btn:active { background: #2a2a2a; }
+
+    #reflections-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .reflection-item {
+      background: #111;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #ddd;
+    }
+
+    .reflection-item .ts {
+      color: #555;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>REFLECTION RECORDER</h1>
+
+  <div id="loader">
+    <label id="file-btn" for="file-input">Tap to load audio file</label>
+    <input id="file-input" type="file" accept="audio/*" style="display:none">
+  </div>
+
+  <audio id="audio"></audio>
+
+  <div id="player-section">
+    <div id="track-name"></div>
+
+    <div id="progress-wrap">
+      <input id="progress" type="range" value="0" min="0" step="0.1">
+      <div id="time-display">
+        <span id="current-time">0:00</span>
+        <span id="duration">0:00</span>
+      </div>
+    </div>
+
+    <div class="skip-row">
+      <button class="skip-btn" data-skip="-15">−15s</button>
+      <button class="skip-btn" data-skip="-10">−10s</button>
+      <button class="skip-btn" data-skip="-5">−5s</button>
+      <button class="skip-btn" data-skip="5">+5s</button>
+      <button class="skip-btn" data-skip="10">+10s</button>
+      <button class="skip-btn" data-skip="15">+15s</button>
+    </div>
+
+    <div class="main-btns">
+      <button id="play-btn">▶</button>
+      <button id="reflect-btn">REFLECT</button>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <div id="reflections-section">
+    <div id="reflections-header">
+      <span>Reflections</span>
+      <button id="copy-btn">Copy all</button>
+    </div>
+    <div id="reflections-list"></div>
+  </div>
+
+  <script>
+    const audio = document.getElementById('audio');
+    const fileInput = document.getElementById('file-input');
+    const playerSection = document.getElementById('player-section');
+    const trackName = document.getElementById('track-name');
+    const progress = document.getElementById('progress');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playBtn = document.getElementById('play-btn');
+    const reflectBtn = document.getElementById('reflect-btn');
+    const statusEl = document.getElementById('status');
+    const reflectionsSection = document.getElementById('reflections-section');
+    const reflectionsList = document.getElementById('reflections-list');
+    const copyBtn = document.getElementById('copy-btn');
+
+    const reflections = [];
+    let isRecording = false;
+    let recognition;
+    let currentTranscript = '';
+    let reflectTimestamp = 0;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // Format seconds as m:ss
+    function fmt(s) {
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return `${m}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    // Load file
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      audio.src = URL.createObjectURL(file);
+      trackName.textContent = file.name.replace(/\.[^.]+$/, '');
+      playerSection.style.display = 'flex';
+      document.getElementById('loader').style.display = 'none';
+    });
+
+    // Audio events
+    audio.addEventListener('loadedmetadata', () => {
+      progress.max = audio.duration;
+      durationEl.textContent = fmt(audio.duration);
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      progress.value = audio.currentTime;
+      currentTimeEl.textContent = fmt(audio.currentTime);
+    });
+
+    audio.addEventListener('play', () => { playBtn.textContent = '⏸'; });
+    audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
+
+    progress.addEventListener('input', () => {
+      audio.currentTime = progress.value;
+    });
+
+    // Play/pause
+    playBtn.addEventListener('click', () => {
+      if (audio.paused) audio.play();
+      else audio.pause();
+    });
+
+    // Skip buttons
+    document.querySelectorAll('.skip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + parseFloat(btn.dataset.skip)));
+      });
+    });
+
+    // Reflect toggle
+    reflectBtn.addEventListener('click', () => {
+      if (!isRecording) {
+        startReflection();
+      } else {
+        stopReflection();
+      }
+    });
+
+    function startReflection() {
+      if (!SpeechRecognition) {
+        statusEl.textContent = 'Speech recognition not supported.';
+        return;
+      }
+      reflectTimestamp = audio.currentTime;
+      audio.pause();
+      currentTranscript = '';
+
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onresult = (e) => {
+        let t = '';
+        for (let i = 0; i < e.results.length; i++) {
+          t += e.results[i][0].transcript;
+        }
+        currentTranscript = t;
+        statusEl.textContent = t;
+      };
+
+      recognition.onerror = (e) => {
+        statusEl.textContent = 'Error: ' + e.error;
+        isRecording = false;
+        reflectBtn.textContent = 'REFLECT';
+        reflectBtn.classList.remove('recording');
+      };
+
+      recognition.onend = () => {
+        if (isRecording) stopReflection();
+      };
+
+      recognition.start();
+      isRecording = true;
+      reflectBtn.textContent = 'SAVE';
+      reflectBtn.classList.add('recording');
+      statusEl.textContent = 'Recording...';
+    }
+
+    function stopReflection() {
+      isRecording = false;
+      recognition.stop();
+      reflectBtn.textContent = 'REFLECT';
+      reflectBtn.classList.remove('recording');
+
+      if (currentTranscript.trim()) {
+        saveReflection(reflectTimestamp, currentTranscript.trim());
+      }
+
+      statusEl.textContent = '';
+      audio.play();
+    }
+
+    function saveReflection(ts, text) {
+      reflections.push({ ts, text });
+
+      const item = document.createElement('div');
+      item.className = 'reflection-item';
+      item.innerHTML = `<div class="ts">${fmt(ts)}</div><div>${text}</div>`;
+      reflectionsList.appendChild(item);
+      reflectionsSection.style.display = 'flex';
+    }
+
+    // Copy all
+    copyBtn.addEventListener('click', () => {
+      const text = reflections.map(r => `[${fmt(r.ts)}] ${r.text}`).join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => copyBtn.textContent = 'Copy all', 1500);
+      });
+    });
+  </script>
+</body>
+</html>
