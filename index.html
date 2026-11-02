@@ -101,6 +101,17 @@
     }
     #copy-btn:active { background: #2a2a2a; }
 
+    #clear-btn {
+      padding: 8px 16px;
+      background: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      color: #e63946;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #clear-btn:active { background: #2a2a2a; }
+
     #reflections-list {
       display: flex;
       flex-direction: column;
@@ -304,7 +315,10 @@
     <div id="reflections-section">
       <div id="reflections-header">
         <span>Reflections</span>
-        <button id="copy-btn">Copy all</button>
+        <div style="display:flex;gap:8px">
+          <button id="clear-btn">Clear</button>
+          <button id="copy-btn">Copy all</button>
+        </div>
       </div>
       <div id="reflections-list"></div>
     </div>
@@ -360,12 +374,14 @@
     const reflectionsSection = document.getElementById('reflections-section');
     const reflectionsList = document.getElementById('reflections-list');
     const copyBtn = document.getElementById('copy-btn');
+    const clearBtn = document.getElementById('clear-btn');
     const liveTranscript = document.getElementById('live-transcript');
     const liveText = document.getElementById('live-text');
     const speedBtn = document.getElementById('speed-btn');
     const speedPanel = document.getElementById('speed-panel');
     const speedSlider = document.getElementById('speed-slider');
 
+    const STORAGE_KEY = 'reflections';
     const reflections = [];
     let isRecording = false;
     let recognition;
@@ -488,15 +504,35 @@
       if (wasPlaying) audio.play();
     }
 
-    function saveReflection(ts, text) {
-      reflections.push({ ts, text });
-
+    function renderReflection(ts, text) {
       const item = document.createElement('div');
       item.className = 'reflection-item';
       item.innerHTML = `<div class="ts">${fmt(ts)}</div><div>${text}</div>`;
       reflectionsList.appendChild(item);
       reflectionsSection.style.display = 'flex';
     }
+
+    function saveReflection(ts, text) {
+      reflections.push({ ts, text });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reflections));
+      renderReflection(ts, text);
+    }
+
+    // Load saved reflections on start
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    saved.forEach(r => {
+      reflections.push(r);
+      renderReflection(r.ts, r.text);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Clear all reflections? This cannot be undone.')) {
+        reflections.length = 0;
+        localStorage.removeItem(STORAGE_KEY);
+        reflectionsList.innerHTML = '';
+        reflectionsSection.style.display = 'none';
+      }
+    });
 
     speedBtn.addEventListener('click', () => {
       speedPanel.classList.toggle('visible');
