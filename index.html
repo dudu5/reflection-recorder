@@ -464,6 +464,10 @@
       navigator.mediaSession.setActionHandler('seekforward', (e) => {
         audio.currentTime = Math.min(audio.duration, audio.currentTime + (e.seekOffset || 15));
       });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        if (!isRecording) startReflection();
+        else stopReflection();
+      });
     }
 
     function loadAudioBlob(blob, name, restoreTime) {
