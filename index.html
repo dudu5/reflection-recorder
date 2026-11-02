@@ -471,6 +471,10 @@
       const name = file.name.replace(/\.[^.]+$/, '');
       localStorage.setItem('trackName', name);
       localStorage.setItem('currentTime', 0);
+      reflections.length = 0;
+      localStorage.removeItem(STORAGE_KEY);
+      reflectionsList.innerHTML = '';
+      reflectionsSection.style.display = 'none';
       storeFile(file).then(() => loadAudioBlob(file, name, 0));
     });
 
@@ -607,18 +611,11 @@
     });
 
     clearBtn.addEventListener('click', () => {
-      if (confirm('Clear everything and start over? Reflections and audio will be lost.')) {
+      if (confirm('Clear all reflections? This cannot be undone.')) {
         reflections.length = 0;
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem('trackName');
-        localStorage.removeItem('currentTime');
-        dbReady.then(db => db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).delete('file'));
         reflectionsList.innerHTML = '';
         reflectionsSection.style.display = 'none';
-        audio.pause();
-        audio.src = '';
-        controls.style.display = 'none';
-        document.getElementById('loader').style.display = 'flex';
       }
     });
 
