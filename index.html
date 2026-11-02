@@ -414,6 +414,12 @@
     const reflections = [];
     let isRecording = false;
 
+    // Silent audio loop to keep media session alive during reflection
+    // 1 second of silence as a base64 WAV
+    const silentAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    silentAudio.loop = true;
+    silentAudio.volume = 0;
+
     // IndexedDB for audio file
     const DB_NAME = 'reflection-recorder';
     const DB_STORE = 'audio';
@@ -580,6 +586,7 @@
       liveTranscript.style.display = 'flex';
       playBtn.disabled = true;
       playBtn.style.opacity = '0.3';
+      silentAudio.play().catch(() => {});
     }
 
     function stopReflection() {
@@ -591,6 +598,7 @@
       liveTranscript.style.display = 'none';
       playBtn.disabled = false;
       playBtn.style.opacity = '1';
+      silentAudio.pause();
 
       if (currentTranscript.trim()) {
         saveReflection(reflectTimestamp, currentTranscript.trim());
