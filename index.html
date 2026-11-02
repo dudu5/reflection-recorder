@@ -52,6 +52,24 @@
     }
 
     /* Reflections */
+    #live-transcript {
+      display: none;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #live-transcript p {
+      font-size: 22px;
+      line-height: 1.5;
+      color: #fff;
+      text-align: center;
+    }
+    #live-transcript p.placeholder {
+      color: #444;
+      font-size: 18px;
+    }
+
     #reflections-section {
       display: none;
       flex-direction: column;
@@ -279,6 +297,10 @@
       <input id="file-input" type="file" accept="audio/*,.m4a,.mp4,.caf,.aac,.mp3,.wav" style="display:none">
     </div>
 
+    <div id="live-transcript">
+      <p class="placeholder" id="live-text">Listening...</p>
+    </div>
+
     <div id="reflections-section">
       <div id="reflections-header">
         <span>Reflections</span>
@@ -338,6 +360,8 @@
     const reflectionsSection = document.getElementById('reflections-section');
     const reflectionsList = document.getElementById('reflections-list');
     const copyBtn = document.getElementById('copy-btn');
+    const liveTranscript = document.getElementById('live-transcript');
+    const liveText = document.getElementById('live-text');
     const speedBtn = document.getElementById('speed-btn');
     const speedPanel = document.getElementById('speed-panel');
     const speedSlider = document.getElementById('speed-slider');
@@ -423,7 +447,8 @@
           t += e.results[i][0].transcript;
         }
         currentTranscript = t;
-        statusEl.textContent = t;
+        liveText.textContent = t;
+        liveText.classList.remove('placeholder');
       };
 
       recognition.onerror = (e) => {
@@ -441,7 +466,11 @@
       isRecording = true;
       reflectBtn.textContent = 'SAVE';
       reflectBtn.classList.add('recording');
-      statusEl.textContent = 'Recording...';
+      statusEl.textContent = '';
+      liveText.textContent = 'Listening...';
+      liveText.classList.add('placeholder');
+      reflectionsSection.style.display = 'none';
+      liveTranscript.style.display = 'flex';
     }
 
     function stopReflection() {
@@ -450,11 +479,12 @@
       reflectBtn.textContent = 'REFLECT';
       reflectBtn.classList.remove('recording');
 
+      liveTranscript.style.display = 'none';
+
       if (currentTranscript.trim()) {
         saveReflection(reflectTimestamp, currentTranscript.trim());
       }
 
-      statusEl.textContent = '';
       if (wasPlaying) audio.play();
     }
 
