@@ -159,13 +159,30 @@
       gap: 6px;
     }
 
+    #track-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     #track-name {
       font-size: 14px;
       color: #aaa;
-      text-align: center;
+      flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    #change-file-btn {
+      background: none;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #888;
+      font-size: 12px;
+      padding: 3px 8px;
+      cursor: pointer;
+      flex-shrink: 0;
     }
 
     #progress {
@@ -350,7 +367,10 @@
     </div>
 
     <div id="progress-wrap">
-      <div id="track-name"></div>
+      <div id="track-row">
+        <div id="track-name"></div>
+        <label id="change-file-btn" for="file-input">Change file</label>
+      </div>
       <input id="progress" type="range" value="0" min="0" step="0.1">
       <div id="time-display">
         <span id="current-time">0:00</span>
@@ -586,11 +606,18 @@
     });
 
     clearBtn.addEventListener('click', () => {
-      if (confirm('Clear all reflections? This cannot be undone.')) {
+      if (confirm('Clear everything and start over? Reflections and audio will be lost.')) {
         reflections.length = 0;
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('trackName');
+        localStorage.removeItem('currentTime');
+        dbReady.then(db => db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).delete('file'));
         reflectionsList.innerHTML = '';
         reflectionsSection.style.display = 'none';
+        audio.pause();
+        audio.src = '';
+        controls.style.display = 'none';
+        document.getElementById('loader').style.display = 'flex';
       }
     });
 
