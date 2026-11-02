@@ -284,6 +284,7 @@
     let recognition;
     let currentTranscript = '';
     let reflectTimestamp = 0;
+    let wasPlaying = false;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -350,6 +351,7 @@
         return;
       }
       reflectTimestamp = audio.currentTime;
+      wasPlaying = !audio.paused;
       audio.pause();
       currentTranscript = '';
 
@@ -396,7 +398,7 @@
       }
 
       statusEl.textContent = '';
-      audio.play();
+      if (wasPlaying) audio.play();
     }
 
     function saveReflection(ts, text) {
