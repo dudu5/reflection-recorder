@@ -32,6 +32,32 @@ Copy and paste into Dynalist, Notion, a doc — whatever.
 
 ---
 
+## Current State — End of Session 1
+
+**What is built and working:**
+- Single HTML file, no backend, no accounts
+- Loads audio from Voice Memos (m4a) via file picker
+- Play/pause, 5/10/15s skip buttons with tap animation
+- Reflect button — pauses audio, records voice, transcribes via Web Speech API, saves with timestamp, resumes audio
+- Playback speed control (0.75x–3x)
+- Live transcript renders bottom-up during reflection
+- Reflections persist across reloads (localStorage)
+- Audio file persists across reloads (IndexedDB)
+- AirPods audio route restored after reflection via pause/play cycle
+- Deployed at: `https://dudu5.github.io/reflection-recorder/index.html`
+- Added to iPhone home screen as web app
+- Repo: `https://github.com/dudu5/reflection-recorder`
+
+**Known open issues:**
+- Speech recognition does not pick up voice through AirPods mic during reflection — phone mic works, AirPods mic does not. Not yet solved.
+- Timeout handling not built yet — if Speech API times out mid-reflection, it silently saves what was captured. No user feedback, no continue option.
+
+**Next session priorities:**
+1. Timeout handling — tone + visual feedback + continue/save choice (was built then reverted due to AudioContext breaking playback — needs a different approach, test AudioContext in isolation first)
+2. AirPods mic during reflection — investigate if Web Speech API can use AirPods as input device on iOS Safari
+
+---
+
 ## Production Manual — The Order of Operations
 
 From Elon's algorithm — this is a sequence, not a checklist. Each step only after the previous:
